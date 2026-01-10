@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Fonts: Inter for UI, Merriweather for headings/logo -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="bg-decor" aria-hidden="true">
+        <img class="decor-left" src="/static/ornament-left.svg" alt="" aria-hidden="true">
+        <img class="decor-right" src="/static/ornament-right.svg" alt="" aria-hidden="true">
+    </div>
+
+    <header class="site-header">
+        <div class="logo">Veeniksha Music Academy</div>
+        <nav class="main-nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/students">Students</a>
+            <a href="/schedule">Schedule</a>
+            <a href="/sessions">Sessions</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        
+            
+        
+        
+<div class="card">
+    <h1>Session Details</h1>
+    <p><strong>Topic:</strong> Smoke Test Session Auto</p>
+    <p><strong>Start:</strong> 2026-01-10 22:45</p>
+    <p><strong>Duration:</strong> 30 mins</p>
+    <p><strong>Meet:</strong> <a href="https://meet.google.com/ysk-cdee-zxh" target="_blank">Join Meet</a></p>
+    
+</div>
+
+<h2>Attendees</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Invite Status</th>
+            <th>Attendance</th>
+            <th>Removed</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+        <tr class="">
+            <td>Smoke Test Student Auto</td>
+            <td>invited</td>
+            <td>pending</td>
+            <td>No</td>
+            <td>
+                <form method="post" class="inline">
+                    <input type="hidden" name="action" value="update_status">
+                    <input type="hidden" name="link_id" value="5">
+                    <select name="invite_status">
+                        
+                        <option value="invited" selected>invited</option>
+                        
+                        <option value="confirmed" >confirmed</option>
+                        
+                        <option value="denied" >denied</option>
+                        
+                    </select>
+                    <select name="attendance_status">
+                        
+                        <option value="pending" selected>pending</option>
+                        
+                        <option value="attended" >attended</option>
+                        
+                        <option value="absent" >absent</option>
+                        
+                    </select>
+                    <button type="submit" class="secondary">Update</button>
+                </form>
+                
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+    </main>
+</body>
+</html>
