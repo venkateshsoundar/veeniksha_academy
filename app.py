@@ -17,6 +17,8 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///veeniksha.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["ADMIN_EMAIL"] = os.getenv("ADMIN_EMAIL", "admin@veeniksha.local")
+    app.config["ADMIN_PASSWORD"] = os.getenv("ADMIN_PASSWORD", "change-me")
     app.config["GOOGLE_CREDENTIALS_FILE"] = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
     app.config["GOOGLE_TOKEN_FILE"] = os.getenv("GOOGLE_TOKEN_FILE", "token.json")
     app.config["GOOGLE_CALENDAR_ID"] = os.getenv("GOOGLE_CALENDAR_ID", "primary")
@@ -29,11 +31,41 @@ def create_app():
         db.create_all()
         print("Database initialized.")
 
+    def login_required(view):
+        def wrapped(*args, **kwargs):
+            if not session.get("is_admin"):
+                return redirect(url_for("login"))
+            return view(*args, **kwargs)
+
+        wrapped.__name__ = view.__name__
+        return wrapped
+
     @app.route("/")
     def index():
-        return redirect(url_for("dashboard"))
+        if session.get("is_admin"):
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("login"))
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        if request.method == "POST":
+            email = request.form.get("email", "").strip()
+            password = request.form.get("password", "").strip()
+            if email == app.config["ADMIN_EMAIL"] and password == app.config["ADMIN_PASSWORD"]:
+                session["is_admin"] = True
+                flash("Logged in successfully.", "success")
+                return redirect(url_for("dashboard"))
+            flash("Invalid credentials.", "error")
+        return render_template("login.html")
+
+    @app.route("/logout")
+    def logout():
+        session.clear()
+        flash("Logged out.", "success")
+        return redirect(url_for("login"))
 
     @app.route("/dashboard")
+    @login_required
     def dashboard():
         now = datetime.utcnow()
         month_start = datetime(now.year, now.month, 1)
@@ -73,11 +105,13 @@ def create_app():
         )
 
     @app.route("/students")
+    @login_required
     def students_list():
         students = Student.query.order_by(Student.created_at.desc()).all()
         return render_template("students.html", students=students)
 
     @app.route("/students/new", methods=["GET", "POST"])
+    @login_required
     def students_new():
         if request.method == "POST":
             full_name = request.form.get("full_name", "").strip()
@@ -101,6 +135,7 @@ def create_app():
         return render_template("student_form.html", student=None)
 
     @app.route("/students/<int:student_id>/edit", methods=["GET", "POST"])
+    @login_required
     def students_edit(student_id):
         student = Student.query.get_or_404(student_id)
         if request.method == "POST":
@@ -122,6 +157,7 @@ def create_app():
         return render_template("student_form.html", student=student)
 
     @app.route("/schedule", methods=["GET", "POST"])
+    @login_required
     def schedule_session():
         students = Student.query.filter_by(active=True).order_by(Student.full_name.asc()).all()
         if request.method == "POST":
@@ -191,6 +227,7 @@ def create_app():
         return render_template("schedule.html", students=students)
 
     @app.route("/sessions")
+    @login_required
     def sessions_list():
         now = datetime.utcnow()
         upcoming = Session.query.filter(Session.start_time >= now).order_by(Session.start_time.asc()).all()
@@ -198,6 +235,7 @@ def create_app():
         return render_template("sessions.html", upcoming=upcoming, past=past)
 
     @app.route("/sessions/<int:session_id>", methods=["GET", "POST"])
+    @login_required
     def sessions_detail(session_id):
         session_record = Session.query.get_or_404(session_id)
         if request.method == "POST":

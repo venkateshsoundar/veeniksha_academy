@@ -9,12 +9,16 @@
 <body>
     <header class="site-header">
         <div class="logo">Veena Music Academy</div>
+        {% if session.get('is_admin') %}
         <nav>
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('students_list') }}">Students</a>
             <a href="{{ url_for('schedule_session') }}">Schedule</a>
             <a href="{{ url_for('sessions_list') }}">Sessions</a>
         </nav>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </nav>
+        {% endif %}
     </header>
 
     <main class="container">
