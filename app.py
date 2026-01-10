@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from sqlalchemy import case, func
 
 from google_calendar import create_calendar_event
@@ -17,12 +17,14 @@ def create_app():
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///veeniksha.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["ADMIN_EMAIL"] = os.getenv("ADMIN_EMAIL", "admin@veeniksha.local")
-    app.config["ADMIN_PASSWORD"] = os.getenv("ADMIN_PASSWORD", "change-me")
+    # Admin credentials removed; no authentication required.
     app.config["GOOGLE_CREDENTIALS_FILE"] = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
     app.config["GOOGLE_TOKEN_FILE"] = os.getenv("GOOGLE_TOKEN_FILE", "token.json")
     app.config["GOOGLE_CALENDAR_ID"] = os.getenv("GOOGLE_CALENDAR_ID", "primary")
     app.config["DEFAULT_TIMEZONE"] = os.getenv("DEFAULT_TIMEZONE", "Asia/Kolkata")
+    # Optional: If set, this fixed Meet URL will be used for sessions when no manual link is provided.
+    # Example: DEFAULT_MEET_LINK=https://meet.google.com/abc-defg-hij
+    app.config["DEFAULT_MEET_LINK"] = os.getenv("DEFAULT_MEET_LINK", "")
 
     db.init_app(app)
 
@@ -32,37 +34,16 @@ def create_app():
         print("Database initialized.")
 
     def login_required(view):
-        def wrapped(*args, **kwargs):
-            if not session.get("is_admin"):
-                return redirect(url_for("login"))
-            return view(*args, **kwargs)
-
-        wrapped.__name__ = view.__name__
-        return wrapped
+        # Authentication removed; allow all access.
+        return view
 
     @app.route("/")
     def index():
-        if session.get("is_admin"):
-            return redirect(url_for("dashboard"))
-        return redirect(url_for("login"))
+        return redirect(url_for("dashboard"))
 
-    @app.route("/login", methods=["GET", "POST"])
-    def login():
-        if request.method == "POST":
-            email = request.form.get("email", "").strip()
-            password = request.form.get("password", "").strip()
-            if email == app.config["ADMIN_EMAIL"] and password == app.config["ADMIN_PASSWORD"]:
-                session["is_admin"] = True
-                flash("Logged in successfully.", "success")
-                return redirect(url_for("dashboard"))
-            flash("Invalid credentials.", "error")
-        return render_template("login.html")
+    # Login endpoint removed; no authentication required.
 
-    @app.route("/logout")
-    def logout():
-        session.clear()
-        flash("Logged out.", "success")
-        return redirect(url_for("login"))
+    # Logout endpoint removed.
 
     @app.route("/dashboard")
     @login_required
@@ -179,24 +160,29 @@ def create_app():
             over_capacity = len(selected_student_ids) > 2
             timezone = request.form.get("timezone") or app.config["DEFAULT_TIMEZONE"]
 
-            meet_link = manual_meet_link
+            # Determine meet link: manual link takes precedence, then DEFAULT_MEET_LINK, otherwise create via Google Calendar
+            fixed_meet = app.config.get("DEFAULT_MEET_LINK") or ""
+            attendees_emails = [student.email for student in students if str(student.id) in selected_student_ids]
+
+            meet_link = manual_meet_link or (fixed_meet or None)
             calendar_event_id = None
-            if not manual_meet_link:
+            # If no manual or fixed link provided, create event and conference via Google Calendar
+            if not (manual_meet_link or fixed_meet):
                 try:
                     meet_link, calendar_event_id = create_calendar_event(
-                        summary=topic or "Veena Session",
+                        summary=topic or "Veeniksha Session",
                         start_time=start_time,
                         duration_mins=duration_mins,
                         timezone=timezone,
-                        attendees=[student.email for student in students if str(student.id) in selected_student_ids],
+                        attendees=attendees_emails,
                         credentials_file=app.config["GOOGLE_CREDENTIALS_FILE"],
                         token_file=app.config["GOOGLE_TOKEN_FILE"],
                         calendar_id=app.config["GOOGLE_CALENDAR_ID"],
                     )
                 except RuntimeError as exc:
-                    flash(f"Google Calendar setup missing: {exc}. Add a manual Meet link.", "warning")
+                    flash(f"Google Calendar setup missing: {exc}. Add a manual Meet link or set DEFAULT_MEET_LINK.", "warning")
                 except Exception as exc:  # noqa: BLE001
-                    flash(f"Google Calendar error: {exc}. Add a manual Meet link.", "warning")
+                    flash(f"Google Calendar error: {exc}. Add a manual Meet link or set DEFAULT_MEET_LINK.", "warning")
 
             session_record = Session(
                 start_time=start_time,

@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title or "Veena Academy" }}</title>
+    <!-- Fonts: Inter for UI, Merriweather for headings/logo -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+    <div class="bg-decor" aria-hidden="true">
+        <img class="decor-left" src="{{ url_for('static', filename='ornament-left.svg') }}" alt="" aria-hidden="true">
+        <img class="decor-right" src="{{ url_for('static', filename='ornament-right.svg') }}" alt="" aria-hidden="true">
+    </div>
+
     <header class="site-header">
-        <div class="logo">Veena Music Academy</div>
-        {% if session.get('is_admin') %}
-        <nav>
+        <div class="logo">Veeniksha Music Academy</div>
+        <nav class="main-nav">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
             <a href="{{ url_for('students_list') }}">Students</a>
             <a href="{{ url_for('schedule_session') }}">Schedule</a>
             <a href="{{ url_for('sessions_list') }}">Sessions</a>
         </nav>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </nav>
-        {% endif %}
     </header>
 
     <main class="container">

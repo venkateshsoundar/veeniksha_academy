@@ -1,4 +1,4 @@
-# Veena Music Academy MVP
+# Veeniksha_Academy_Students Scheduler
 
 ## Overview
 This MVP helps manage students, schedule sessions, track attendance, and view dashboard insights. It uses Flask + SQLite for a simple, local-first workflow and is designed to switch to Postgres later via a `DATABASE_URL` config change.
@@ -30,7 +30,16 @@ Visit `http://127.0.0.1:5000`.
 3. Configure an OAuth Consent screen for local/testing.
 4. Create OAuth Client ID (Desktop app) and download `credentials.json` into the repo root.
 5. Set `GOOGLE_CREDENTIALS_FILE` and `GOOGLE_TOKEN_FILE` in `.env`.
-6. When you schedule a session, the OAuth flow will open in your browser to authorize. A `token.json` file will be saved locally.
+6. Optionally set a fixed Meet link to use for all sessions (if you want a single persistent meeting URL):
+
+   - `DEFAULT_MEET_LINK=https://meet.google.com/abc-defg-hij`
+
+7. You can also control the OAuth flow used by the local helper via environment variables:
+
+   - `GOOGLE_OAUTH_CONSOLE=1` → Use a console (copy/paste) flow instead of a local web server (handy for headless environments).
+   - `GOOGLE_OAUTH_PORT=8080` → Use a fixed port for the local server (register `http://localhost:8080/` as an Authorized redirect URI if using a Web client).
+
+8. When you schedule a session, the OAuth flow will open in your browser to authorize (unless you supply a manual Meet link or set `DEFAULT_MEET_LINK`, or set `GOOGLE_OAUTH_CONSOLE=1`). A `token.json` file will be saved locally.
 
 If Google Calendar is not configured, you can enter a manual Meet link during scheduling.
 
