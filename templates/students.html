@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Students</h1>
+    <a class="primary" href="{{ url_for('students_new') }}">Add Student</a>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Level</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in students %}
+        <tr class="{{ 'muted' if not student.active }}">
+            <td>{{ student.full_name }}</td>
+            <td>{{ student.email }}</td>
+            <td>{{ student.phone or '-' }}</td>
+            <td>{{ student.level or '-' }}</td>
+            <td>{{ 'Active' if student.active else 'Inactive' }}</td>
+            <td><a href="{{ url_for('students_edit', student_id=student.id) }}">Edit</a></td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">No students yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

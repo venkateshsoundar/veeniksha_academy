@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h1>Session Details</h1>
+    <p><strong>Topic:</strong> {{ session.topic or 'Session' }}</p>
+    <p><strong>Start:</strong> {{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</p>
+    <p><strong>Duration:</strong> {{ session.duration_mins }} mins</p>
+    <p><strong>Meet:</strong> {% if session.meet_link %}<a href="{{ session.meet_link }}" target="_blank">Join Meet</a>{% else %}No link{% endif %}</p>
+    {% if session.over_capacity %}
+    <div class="warning">Session scheduled with more than 2 students.</div>
+    {% endif %}
+</div>
+
+<h2>Attendees</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Invite Status</th>
+            <th>Attendance</th>
+            <th>Removed</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for link in session_students %}
+        <tr class="{{ 'muted' if link.removed_from_session }}">
+            <td>{{ link.student.full_name }}</td>
+            <td>{{ link.invite_status }}</td>
+            <td>{{ link.attendance_status }}</td>
+            <td>{{ 'Yes' if link.removed_from_session else 'No' }}</td>
+            <td>
+                <form method="post" class="inline">
+                    <input type="hidden" name="action" value="update_status">
+                    <input type="hidden" name="link_id" value="{{ link.id }}">
+                    <select name="invite_status">
+                        {% for option in ['invited', 'confirmed', 'denied'] %}
+                        <option value="{{ option }}" {% if link.invite_status == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="attendance_status">
+                        {% for option in ['pending', 'attended', 'absent'] %}
+                        <option value="{{ option }}" {% if link.attendance_status == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="secondary">Update</button>
+                </form>
+                {% if link.invite_status == 'denied' and not link.removed_from_session %}
+                <form method="post" class="inline">
+                    <input type="hidden" name="action" value="remove_student">
+                    <input type="hidden" name="link_id" value="{{ link.id }}">
+                    <input type="text" name="reason" placeholder="Reason (optional)">
+                    <button type="submit" class="danger">Remove</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No attendees.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

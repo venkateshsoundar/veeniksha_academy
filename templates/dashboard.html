@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="stats">
+    <div class="stat-card">
+        <h2>{{ total_sessions }}</h2>
+        <p>Sessions this month</p>
+    </div>
+</div>
+
+<section>
+    <h2>Sessions per Student (This Month)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Sessions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, count in sessions_by_student %}
+            <tr>
+                <td>{{ name }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2">No data yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section>
+    <h2>Attendance Rate (This Month)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Attended</th>
+                <th>Total</th>
+                <th>Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, attended, total in attendance_stats %}
+            <tr>
+                <td>{{ name }}</td>
+                <td>{{ attended }}</td>
+                <td>{{ total }}</td>
+                <td>{{ '%.0f%%' % ((attended / total * 100) if total else 0) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">No data yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section>
+    <h2>Upcoming Sessions</h2>
+    <ul class="list">
+        {% for session in upcoming_sessions %}
+        <li>
+            <strong>{{ session.topic or 'Session' }}</strong> - {{ session.start_time.strftime('%Y-%m-%d %H:%M') }}
+            {% if session.meet_link %}
+            <a href="{{ session.meet_link }}" target="_blank">Meet</a>
+            {% endif %}
+        </li>
+        {% else %}
+        <li>No upcoming sessions.</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

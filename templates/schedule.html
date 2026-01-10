@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h1>Schedule Session</h1>
+    <form method="post" id="schedule-form">
+        <div class="grid">
+            <label>Start time
+                <input type="datetime-local" name="start_time" required>
+            </label>
+            <label>Duration (minutes)
+                <input type="number" name="duration_mins" min="15" value="60" required>
+            </label>
+            <label>Timezone
+                <input type="text" name="timezone" placeholder="Asia/Kolkata">
+            </label>
+            <label>Topic / Notes
+                <input type="text" name="topic">
+            </label>
+        </div>
+        <label>Students (select up to 2 recommended)
+            <select name="student_ids" id="student-select" multiple size="6" required>
+                {% for student in students %}
+                <option value="{{ student.id }}">{{ student.full_name }} ({{ student.level or 'Level N/A' }})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div id="capacity-warning" class="warning hidden">
+            More than 2 students selected. Consider splitting into multiple sessions.
+        </div>
+        <label>Manual Google Meet link (if Calendar not configured)
+            <input type="url" name="manual_meet_link" placeholder="https://meet.google.com/...">
+        </label>
+        <button type="submit" class="primary">Create Session</button>
+        <a class="secondary" href="{{ url_for('sessions_list') }}">Cancel</a>
+    </form>
+</div>
+<script src="{{ url_for('static', filename='scripts.js') }}"></script>
+{% endblock %}
