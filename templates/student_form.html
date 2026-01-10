@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h1>{{ 'Edit Student' if student else 'Add Student' }}</h1>
+    <form method="post">
+        <div class="grid">
+            <label>Full name
+                <input type="text" name="full_name" value="{{ student.full_name if student else '' }}" required>
+            </label>
+            <label>Email
+                <input type="email" name="email" value="{{ student.email if student else '' }}" required>
+            </label>
+            <label>Phone / WhatsApp
+                <input type="text" name="phone" value="{{ student.phone if student else '' }}">
+            </label>
+            <label>Level
+                <input type="text" name="level" value="{{ student.level if student else '' }}">
+            </label>
+            <label>Timezone
+                <input type="text" name="timezone" value="{{ student.timezone if student else '' }}">
+            </label>
+        </div>
+        <label>Notes
+            <textarea name="notes">{{ student.notes if student else '' }}</textarea>
+        </label>
+        {% if student %}
+        <label class="checkbox">
+            <input type="checkbox" name="active" {% if student.active %}checked{% endif %}>
+            Active
+        </label>
+        {% endif %}
+        <button type="submit" class="primary">Save</button>
+        <a class="secondary" href="{{ url_for('students_list') }}">Cancel</a>
+    </form>
+</div>
+{% endblock %}
