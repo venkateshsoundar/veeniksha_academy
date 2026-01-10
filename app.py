@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for
 from sqlalchemy import case, func
 
 from google_calendar import create_calendar_event
