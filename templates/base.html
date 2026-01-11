@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Fonts: Inter for UI, Merriweather for headings/logo -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v={{ static_version }}">
 </head>
-<body>
+<body class="{{ page_class|default('') }}">
     <div class="bg-decor" aria-hidden="true">
         <img class="decor-left" src="{{ url_for('static', filename='ornament-left.svg') }}" alt="" aria-hidden="true">
         <img class="decor-right" src="{{ url_for('static', filename='ornament-right.svg') }}" alt="" aria-hidden="true">

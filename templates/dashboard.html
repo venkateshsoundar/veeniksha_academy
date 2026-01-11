@@ -1,74 +1,201 @@
 {% extends "base.html" %}
+{% set page_class = "dashboard-page" %}
 {% block content %}
+{% set has_period_filter = request.args.get('year') or request.args.get('month') %}
 <h1>Dashboard</h1>
-<div class="stats">
+<section class="card filter-card">
+    <form method="get" class="grid filter-grid">
+        <label>Student
+            <select name="student_id">
+                <option value="">All students</option>
+                {% for s in students %}
+                <option value="{{ s.id }}" {% if request.args.get('student_id') == (s.id|string) %}selected{% endif %}>{{ s.full_name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Year
+            <select name="year">
+                <option value="">All years</option>
+                {% for year in years %}
+                <option value="{{ year }}" {% if request.args.get('year') == (year|string) %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Month
+            <select name="month">
+                <option value="">All months</option>
+                {% for value, label in month_options %}
+                <option value="{{ value }}" {% if request.args.get('month') == (value|string) %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div class="filter-actions">
+            <button class="primary" type="submit">Apply</button>
+            <a class="secondary" href="{{ url_for('dashboard') }}">Clear</a>
+        </div>
+    </form>
+</section>
+
+<div class="stats-grid">
     <div class="stat-card">
         <h2>{{ total_sessions }}</h2>
-        <p>Sessions this month</p>
+        <p>{% if request.args.get('month') %}Sessions in selected month{% elif request.args.get('year') %}Sessions in selected year{% else %}Sessions this month{% endif %}</p>
+    </div>
+    <div class="stat-card">
+        <h2>{{ total_sessions_year }}</h2>
+        <p>{% if request.args.get('year') %}Sessions in selected year{% else %}Sessions this year{% endif %}</p>
+    </div>
+    <div class="stat-card">
+        <h2>{{ total_active_students }}</h2>
+        <p>Active students</p>
     </div>
 </div>
 
-<section>
-    <h2>Sessions per Student (This Month)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Sessions</th>
-            </tr>
-        </thead>
-        <tbody>
+<section class="insights-grid">
+    <div class="card chart-card">
+        <h2>Sessions by Student</h2>
+        {% set max_sessions = (sessions_by_student|map(attribute=1)|max) if sessions_by_student else 1 %}
+        <div class="bar-chart">
             {% for name, count in sessions_by_student %}
-            <tr>
-                <td>{{ name }}</td>
-                <td>{{ count }}</td>
-            </tr>
+            <div class="bar-row">
+                <span class="bar-label">{{ name }}</span>
+                <span class="bar-track">
+                    <span class="bar-fill" style="width: {{ (count / max_sessions * 100) if max_sessions else 0 }}%"></span>
+                </span>
+                <span class="bar-value">{{ count }}</span>
+            </div>
             {% else %}
-            <tr><td colspan="2">No data yet.</td></tr>
+            <p class="muted">No data yet.</p>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
+    </div>
+    <div class="card chart-card">
+        <h2>Attendance Rate</h2>
+        <div class="bar-chart">
+            {% for name, attended, total in attendance_stats %}
+            {% set rate = (attended / total * 100) if total else 0 %}
+            <div class="bar-row">
+                <span class="bar-label">{{ name }}</span>
+                <span class="bar-track">
+                    <span class="bar-fill alt" style="width: {{ rate }}%"></span>
+                </span>
+                <span class="bar-value">{{ '%.0f%%' % rate }}</span>
+            </div>
+            {% else %}
+            <p class="muted">No data yet.</p>
+            {% endfor %}
+        </div>
+    </div>
 </section>
 
+{% if filtered_sessions is not none %}
 <section>
-    <h2>Attendance Rate (This Month)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Attended</th>
-                <th>Total</th>
-                <th>Rate</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for name, attended, total in attendance_stats %}
-            <tr>
-                <td>{{ name }}</td>
-                <td>{{ attended }}</td>
-                <td>{{ total }}</td>
-                <td>{{ '%.0f%%' % ((attended / total * 100) if total else 0) }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4">No data yet.</td></tr>
+    <h2>Filtered Sessions</h2>
+    <ul class="list">
+        {% if filtered_sessions %}
+            {% for session in filtered_sessions %}
+            <li>
+                <strong>{{ session.topic or 'Session' }}</strong> - {{ session.start_time.strftime('%Y-%m-%d %H:%M') }}
+                {% if session.meet_link %}
+                <a href="{{ session.meet_link }}" target="_blank">Meet</a>
+                {% endif %}
+            </li>
             {% endfor %}
-        </tbody>
-    </table>
+        {% else %}
+            <li>No sessions match the filters.</li>
+        {% endif %}
+    </ul>
 </section>
+{% endif %}
 
 <section>
     <h2>Upcoming Sessions</h2>
-    <ul class="list">
-        {% for session in upcoming_sessions %}
-        <li>
-            <strong>{{ session.topic or 'Session' }}</strong> - {{ session.start_time.strftime('%Y-%m-%d %H:%M') }}
-            {% if session.meet_link %}
-            <a href="{{ session.meet_link }}" target="_blank">Meet</a>
-            {% endif %}
-        </li>
-        {% else %}
-        <li>No upcoming sessions.</li>
-        {% endfor %}
-    </ul>
+    <h3>Today</h3>
+    <div class="card session-table">
+        <table class="session-grid">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Date</th>
+                    <th>Duration</th>
+                    <th>Students</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in todays_sessions %}
+                <tr style="animation-delay: {{ loop.index0 * 60 }}ms;">
+                    <td><strong>{{ session.topic or 'Session' }}</strong></td>
+                    <td>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ session.duration_mins }} mins</td>
+                    <td>
+                        {% set active_links = session.students | selectattr('removed_from_session', 'equalto', False) | list %}
+                        {% if active_links %}
+                            {% for link in active_links %}
+                                {{ link.student.full_name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            No students
+                        {% endif %}
+                    </td>
+                    <td class="session-actions">
+                        {% if session.meet_link %}
+                        <a href="{{ session.meet_link }}" target="_blank">Meet</a>
+                        {% endif %}
+                        <a href="{{ url_for('sessions_detail', session_id=session.id) }}">View Details</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr class="session-empty">
+                    <td colspan="5">No sessions today.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Next</h3>
+    <div class="card session-table">
+        <table class="session-grid">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Date</th>
+                    <th>Duration</th>
+                    <th>Students</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in upcoming_sessions %}
+                <tr style="animation-delay: {{ loop.index0 * 60 }}ms;">
+                    <td><strong>{{ session.topic or 'Session' }}</strong></td>
+                    <td>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ session.duration_mins }} mins</td>
+                    <td>
+                        {% set active_links = session.students | selectattr('removed_from_session', 'equalto', False) | list %}
+                        {% if active_links %}
+                            {% for link in active_links %}
+                                {{ link.student.full_name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            No students
+                        {% endif %}
+                    </td>
+                    <td class="session-actions">
+                        {% if session.meet_link %}
+                        <a href="{{ session.meet_link }}" target="_blank">Meet</a>
+                        {% endif %}
+                        <a href="{{ url_for('sessions_detail', session_id=session.id) }}">View Details</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr class="session-empty">
+                    <td colspan="5">No upcoming sessions.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
 {% endblock %}

@@ -1,37 +1,87 @@
 {% extends "base.html" %}
+{% set page_class = "sessions-page" %}
 {% block content %}
 <h1>Sessions</h1>
-<section>
-    <h2>Upcoming</h2>
-    <div class="cards">
-        {% for session in upcoming %}
-        <div class="card">
-            <h3>{{ session.topic or 'Session' }}</h3>
-            <p>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</p>
-            <p>Duration: {{ session.duration_mins }} mins</p>
-            {% if session.meet_link %}
-            <a href="{{ session.meet_link }}" target="_blank">Join Meet</a>
-            {% endif %}
-            <a href="{{ url_for('sessions_detail', session_id=session.id) }}">View Details</a>
-        </div>
-        {% else %}
-        <p>No upcoming sessions.</p>
-        {% endfor %}
-    </div>
-</section>
-<section>
+<section class="session-section past-section">
     <h2>Past</h2>
-    <div class="cards">
-        {% for session in past %}
-        <div class="card">
-            <h3>{{ session.topic or 'Session' }}</h3>
-            <p>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</p>
-            <p>Duration: {{ session.duration_mins }} mins</p>
-            <a href="{{ url_for('sessions_detail', session_id=session.id) }}">View Details</a>
-        </div>
-        {% else %}
-        <p>No past sessions.</p>
-        {% endfor %}
+    <div class="card filter-card">
+        <form method="get" class="grid filter-grid">
+            <label>Student
+                <select name="student_id">
+                    <option value="">All students</option>
+                    {% for s in students %}
+                    <option value="{{ s.id }}" {% if request.args.get('student_id') == (s.id|string) %}selected{% endif %}>{{ s.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Year
+                <select name="year">
+                    <option value="">All years</option>
+                    {% for year in years %}
+                    <option value="{{ year }}" {% if request.args.get('year') == (year|string) %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Month
+                <select name="month">
+                    <option value="">All months</option>
+                    {% for value, label in month_options %}
+                    <option value="{{ value }}" {% if request.args.get('month') == (value|string) %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Day
+                <select name="day">
+                    <option value="">All days</option>
+                    {% for day in range(1, 32) %}
+                    <option value="{{ day }}" {% if request.args.get('day') == (day|string) %}selected{% endif %}>{{ day }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="filter-actions">
+                <button class="primary" type="submit">Apply</button>
+                <a class="secondary" href="{{ url_for('sessions_list') }}">Clear</a>
+            </div>
+        </form>
+    </div>
+    <div class="card session-table">
+        <table class="session-grid">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Date</th>
+                    <th>Duration</th>
+                    <th>Students</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in past %}
+                <tr style="animation-delay: {{ loop.index0 * 60 }}ms;">
+                    <td><strong>{{ session.topic or 'Session' }}</strong></td>
+                    <td>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ session.duration_mins }} mins</td>
+                    <td>
+                        {% set active_links = session.students | selectattr('removed_from_session', 'equalto', False) | list %}
+                        {% if active_links %}
+                            {% for link in active_links %}
+                                {{ link.student.full_name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            No students
+                        {% endif %}
+                    </td>
+                    <td class="session-actions">
+                        <a href="{{ url_for('sessions_detail', session_id=session.id) }}">View Details</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr class="session-empty">
+                    <td colspan="5">No past sessions.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
 {% endblock %}

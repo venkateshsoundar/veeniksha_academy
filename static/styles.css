@@ -13,8 +13,10 @@ html, body { height:100%; }
 body {
     font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
     margin:0; color:#261b1e;
-    background: radial-gradient(circle at 10% 10%, rgba(246,200,95,0.06), transparent 15%),
-                linear-gradient(180deg, #fff8f3 0%, #fff3e9 50%, #f6eef2 100%);
+    background: 
+        url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="staff" patternUnits="userSpaceOnUse" width="1200" height="200"><line x1="0" y1="40" x2="1200" y2="40" stroke="rgba(107,35,51,0.04)" stroke-width="1"/><line x1="0" y1="60" x2="1200" y2="60" stroke="rgba(107,35,51,0.04)" stroke-width="1"/><line x1="0" y1="80" x2="1200" y2="80" stroke="rgba(107,35,51,0.05)" stroke-width="1.5"/><line x1="0" y1="100" x2="1200" y2="100" stroke="rgba(107,35,51,0.04)" stroke-width="1"/><line x1="0" y1="120" x2="1200" y2="120" stroke="rgba(107,35,51,0.04)" stroke-width="1"/><circle cx="100" cy="70" r="5" fill="rgba(246,200,95,0.08)"/><circle cx="250" cy="90" r="4" fill="rgba(42,179,169,0.07)"/><circle cx="500" cy="60" r="5" fill="rgba(107,35,51,0.07)"/><circle cx="750" cy="100" r="4" fill="rgba(107,119,222,0.07)"/><circle cx="950" cy="75" r="5" fill="rgba(246,200,95,0.07)"/><line x1="100" y1="65" x2="100" y2="30" stroke="rgba(246,200,95,0.07)" stroke-width="1"/><line x1="250" y1="85" x2="250" y2="50" stroke="rgba(42,179,169,0.07)" stroke-width="1"/><line x1="500" y1="55" x2="500" y2="20" stroke="rgba(107,35,51,0.07)" stroke-width="1"/></pattern></defs><rect width="1200" height="800" fill="url(%23staff)"/></svg>') repeat,
+        radial-gradient(circle at 10% 10%, rgba(246,200,95,0.06), transparent 15%),
+        linear-gradient(180deg, #fff8f3 0%, #fff3e9 50%, #f6eef2 100%);
 }
 
 /* animated decorative SVGs */
@@ -40,10 +42,16 @@ body {
 .card:hover{ transform: translateY(-8px) rotate(-0.3deg); box-shadow: 0 24px 60px rgba(27,21,31,0.12); }
 
 .card.narrow{ max-width:640px; margin:2rem auto; }
+.filter-card{ margin-top:1.5rem; max-width:980px; margin-left:auto; margin-right:auto; }
 
 label{ display:block; font-weight:700; color:var(--accent-deep); margin-bottom:0.6rem; }
 input, select, textarea{ width:100%; padding:0.7rem; border-radius:10px; border:1px solid rgba(27,21,31,0.06); background:linear-gradient(180deg, #fff, rgba(255,255,255,0.95)); }
 input:focus, select:focus, textarea:focus{ outline:none; box-shadow: 0 12px 28px rgba(107,35,51,0.08); border-color: rgba(107,35,51,0.12); }
+.grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; }
+.filter-grid{ grid-template-columns: repeat(4, minmax(150px, 1fr)) auto; align-items:end; }
+.filter-card .grid label{ margin-bottom:0; }
+.filter-actions{ display:flex; gap:0.5rem; align-items:center; justify-content:flex-end; padding-bottom:0.1rem; }
+@media (max-width:900px){ .filter-grid{ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
 
 button, .primary, .secondary, .danger{ padding:0.75rem 1.25rem; border-radius:10px; border:none; cursor:pointer; font-weight:800; letter-spacing:0.2px; }
 
@@ -67,9 +75,85 @@ th, td{ padding:0.95rem; border-bottom:1px solid rgba(27,21,31,0.04); }
 .flash.error{ background: linear-gradient(90deg,#ffecec,#ffd2d2); color:#7a1a1a; }
 .flash.warning{ background: linear-gradient(90deg,#fff9e6,#fff3c9); color:#6a5400; }
 
-.stat-card{ padding:1.15rem 1.5rem; border-radius:14px; box-shadow: var(--shadow); background: linear-gradient(180deg,#ffffff,#fffaf7); }
+.stat-card{ padding:1.15rem 1.5rem; border-radius:14px; box-shadow: var(--shadow); background: linear-gradient(180deg,#ffffff,#fffaf7); text-align:center; position:relative; overflow:hidden; }
+.stat-card::after{ content:""; position:absolute; inset:0 0 auto 0; height:6px; background:linear-gradient(90deg, var(--accent-gold), var(--accent-teal)); opacity:0.8; }
+.stat-card h2{ margin:0; font-size:1.8rem; color:var(--accent-deep); }
+.stat-card p{ margin:0.35rem 0 0; color:#3b2a31; }
+.stats-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; align-items:stretch; width:100%; }
+
+.insights-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.4rem; margin-top:1.2rem; width:100%; }
+.chart-card h2{ margin-top:0; text-align:center; }
+.bar-chart{ display:flex; flex-direction:column; gap:0.85rem; }
+.bar-row{ display:grid; grid-template-columns: minmax(120px, 1fr) 3fr auto; align-items:center; gap:0.8rem; }
+.bar-label{ font-weight:700; color:var(--accent-deep); font-size:0.95rem; }
+.bar-track{ background:rgba(107,35,51,0.08); border-radius:999px; height:0.7rem; position:relative; overflow:hidden; }
+.bar-fill{ display:block; height:100%; background:linear-gradient(90deg, var(--accent-gold), var(--accent-teal)); border-radius:999px; box-shadow:0 8px 18px rgba(107,35,51,0.15); }
+.bar-fill.alt{ background:linear-gradient(90deg, #a24866, #6b2333); }
+.bar-value{ font-weight:700; color:#3b2a31; }
+.muted{ color:rgba(38,27,30,0.55); }
+
+/* Sessions table layout */
+.session-section{ margin-bottom:2rem; }
+.session-table{ padding:1rem 1.2rem; position:relative; overflow:hidden; }
+.session-table::before{ content:""; position:absolute; inset:0; border-radius:16px; border:1px solid rgba(107,35,51,0.08); pointer-events:none; }
+.session-table::after{ content:""; position:absolute; inset:0 0 auto 0; height:6px; opacity:0.85; background:linear-gradient(90deg, var(--accent-gold), var(--accent-teal)); }
+.past-section .session-table::after{ background:linear-gradient(90deg, #a24866, #6b2333); }
+.session-grid{ width:100%; border-collapse:separate; border-spacing:0 0.65rem; }
+.session-grid thead th{ padding:0.6rem 0.5rem; text-align:left; font-weight:800; color:var(--accent-deep); text-transform:uppercase; font-size:0.75rem; letter-spacing:0.8px; }
+.session-grid tbody tr{ animation: rowIn 380ms ease both; }
+.session-grid tbody td{ padding:0.75rem 0.5rem; background:rgba(255,255,255,0.78); }
+.session-grid tbody tr:hover td{ background:rgba(255,255,255,0.95); }
+.session-grid tbody td:first-child{ border-top-left-radius:12px; border-bottom-left-radius:12px; }
+.session-grid tbody td:last-child{ border-top-right-radius:12px; border-bottom-right-radius:12px; }
+.session-grid tbody tr:not(.session-empty) td{ box-shadow:0 10px 24px rgba(27,21,31,0.08); }
+.session-grid tbody tr.session-empty td{ text-align:center; color:rgba(38,27,30,0.55); background:rgba(255,255,255,0.6); }
+.session-grid strong{ color:var(--accent-deep); }
+.session-actions{ display:flex; gap:0.8rem; flex-wrap:wrap; }
+.session-actions a{ color:var(--accent-deep); text-decoration:none; font-weight:700; }
+.session-actions a:hover{ text-decoration:underline; }
+
+@keyframes rowIn{ from{ opacity:0; transform: translateY(12px); } to{ opacity:1; transform: translateY(0); } }
+
+@media (max-width:900px){
+    .session-grid thead{ display:none; }
+    .session-grid, .session-grid tbody, .session-grid tr, .session-grid td{ display:block; width:100%; }
+    .session-grid tbody tr{ margin-bottom:0.8rem; }
+    .session-grid tbody td{ box-shadow:none; }
+    .session-grid tbody td + td{ border-top:1px solid rgba(107,35,51,0.08); }
+    .session-grid tbody td:first-child{ border-radius:12px 12px 0 0; }
+    .session-grid tbody td:last-child{ border-radius:0 0 12px 12px; }
+}
 
 @media (max-width:700px){ .main-nav{ gap:0.6rem; } .site-header{ padding:1rem; } .bg-decor .decor-left{ width:360px; left:-140px; } .bg-decor .decor-right{ width:360px; right:-120px; } }
+
+/* Page-specific musical backgrounds */
+body.dashboard-page { 
+    background: 
+        url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="musicnotes" patternUnits="userSpaceOnUse" width="300" height="300"><circle cx="50" cy="80" r="7" fill="rgba(246,200,95,0.09)"/><path d="M 57 80 L 60 40" stroke="rgba(246,200,95,0.08)" stroke-width="1.5"/><circle cx="150" cy="120" r="6" fill="rgba(107,35,51,0.08)"/><path d="M 157 120 L 160 70" stroke="rgba(107,35,51,0.07)" stroke-width="1.5"/><circle cx="220" cy="100" r="5" fill="rgba(42,179,169,0.08)"/><path d="M 225 100 L 228 55" stroke="rgba(42,179,169,0.07)" stroke-width="1"/><line x1="0" y1="150" x2="300" y2="150" stroke="rgba(107,35,51,0.03)" stroke-width="1"/><line x1="0" y1="170" x2="300" y2="170" stroke="rgba(107,35,51,0.03)" stroke-width="1"/><line x1="0" y1="190" x2="300" y2="190" stroke="rgba(107,35,51,0.04)" stroke-width="1.5"/><line x1="0" y1="210" x2="300" y2="210" stroke="rgba(107,35,51,0.03)" stroke-width="1"/><line x1="0" y1="230" x2="300" y2="230" stroke="rgba(107,35,51,0.03)" stroke-width="1"/></pattern></defs><rect width="1200" height="800" fill="url(%23musicnotes)"/></svg>') repeat,
+        radial-gradient(circle at 10% 10%, rgba(246,200,95,0.06), transparent 15%),
+        linear-gradient(180deg, #fff8f3 0%, #fff3e9 50%, #f6eef2 100%);
+}
+
+body.students-page {
+    background: 
+        url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="treble" patternUnits="userSpaceOnUse" width="400" height="400"><circle cx="60" cy="100" r="12" fill="none" stroke="rgba(107,35,51,0.05)" stroke-width="1.5"/><line x1="60" y1="88" x2="60" y2="112" stroke="rgba(107,35,51,0.04)" stroke-width="1.5"/><circle cx="60" cy="85" r="5" fill="rgba(246,200,95,0.06)"/><circle cx="180" cy="150" r="6" fill="rgba(42,179,169,0.08)"/><path d="M 186 150 L 195 110" stroke="rgba(42,179,169,0.07)" stroke-width="1.5"/><circle cx="280" cy="180" r="5" fill="rgba(107,35,51,0.07)"/><path d="M 285 180 L 292 140" stroke="rgba(107,35,51,0.06)" stroke-width="1"/><path d="M 0 240 Q 100 220 200 240 T 400 240" stroke="rgba(107,35,51,0.03)" stroke-width="1" fill="none"/></pattern></defs><rect width="1200" height="800" fill="url(%23treble)"/></svg>') repeat,
+        radial-gradient(circle at 10% 10%, rgba(246,200,95,0.06), transparent 15%),
+        linear-gradient(180deg, #fff8f3 0%, #fff3e9 50%, #f6eef2 100%);
+}
+
+body.sessions-page {
+    background: 
+        url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="quartznotes" patternUnits="userSpaceOnUse" width="250" height="300"><circle cx="40" cy="80" r="8" fill="rgba(107,119,222,0.08)"/><path d="M 48 80 L 52 35" stroke="rgba(107,119,222,0.07)" stroke-width="2"/><circle cx="140" cy="110" r="7" fill="rgba(246,200,95,0.08)"/><path d="M 147 110 L 152 60" stroke="rgba(246,200,95,0.07)" stroke-width="1.5"/><circle cx="200" cy="70" r="6" fill="rgba(42,179,169,0.08)"/><path d="M 206 70 L 211 25" stroke="rgba(42,179,169,0.07)" stroke-width="1.5"/><path d="M 0 200 L 250 200" stroke="rgba(107,35,51,0.04)" stroke-width="1"/><path d="M 0 220 L 250 220" stroke="rgba(107,35,51,0.03)" stroke-width="1"/><path d="M 0 240 L 250 240" stroke="rgba(107,35,51,0.04)" stroke-width="1"/></pattern></defs><rect width="1200" height="800" fill="url(%23quartznotes)"/></svg>') repeat,
+        radial-gradient(circle at 10% 10%, rgba(246,200,95,0.06), transparent 15%),
+        linear-gradient(180deg, #fff8f3 0%, #fff3e9 50%, #f6eef2 100%);
+}
+
+body.schedule-page {
+    background: 
+        url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="scheduling" patternUnits="userSpaceOnUse" width="300" height="350"><circle cx="50" cy="60" r="6" fill="rgba(42,179,169,0.09)"/><line x1="56" y1="60" x2="65" y2="30" stroke="rgba(42,179,169,0.08)" stroke-width="1.5"/><circle cx="130" cy="100" r="7" fill="rgba(246,200,95,0.08)"/><line x1="137" y1="100" x2="147" y2="65" stroke="rgba(246,200,95,0.07)" stroke-width="1.5"/><circle cx="220" cy="75" r="5" fill="rgba(107,35,51,0.08)"/><line x1="225" y1="75" x2="233" y2="40" stroke="rgba(107,35,51,0.07)" stroke-width="1"/><path d="M 0 180 Q 75 160 150 180 T 300 180" stroke="rgba(107,35,51,0.04)" stroke-width="1" fill="none"/><path d="M 0 200 Q 75 185 150 200 T 300 200" stroke="rgba(107,35,51,0.03)" stroke-width="1" fill="none"/><path d="M 0 220 Q 75 210 150 220 T 300 220" stroke="rgba(107,35,51,0.04)" stroke-width="1" fill="none"/></pattern></defs><rect width="1200" height="800" fill="url(%23scheduling)"/></svg>') repeat,
+        radial-gradient(circle at 10% 10%, rgba(246,200,95,0.06), transparent 15%),
+        linear-gradient(180deg, #fff8f3 0%, #fff3e9 50%, #f6eef2 100%);
+}
 
 /* micro helper */
 .fade-in{ animation: fadeUp 420ms ease both; }

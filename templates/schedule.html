@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set page_class = "schedule-page" %}
 {% block content %}
 <div class="card">
     <h1>Schedule Session</h1>
@@ -34,5 +35,5 @@
         <a class="secondary" href="{{ url_for('sessions_list') }}">Cancel</a>
     </form>
 </div>
-<script src="{{ url_for('static', filename='scripts.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts.js') }}?v={{ static_version }}"></script>
 {% endblock %}

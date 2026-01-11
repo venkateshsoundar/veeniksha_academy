@@ -1,9 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
 from sqlalchemy import case, func
+from sqlalchemy.orm import joinedload
+import time
+import os as _os
 
 from google_calendar import create_calendar_event
 from models import Session, SessionStudent, Student, db
@@ -28,6 +31,11 @@ def create_app():
 
     db.init_app(app)
 
+    @app.context_processor
+    def inject_static_version():
+        # Provide a cache-busting version for static assets; uses STATIC_VERSION env var or app start timestamp
+        return {"static_version": _os.getenv("STATIC_VERSION", str(int(time.time())))}
+
     @app.cli.command("init-db")
     def init_db_command():
         db.create_all()
@@ -49,17 +57,72 @@ def create_app():
     @login_required
     def dashboard():
         now = datetime.utcnow()
-        month_start = datetime(now.year, now.month, 1)
-        total_sessions = Session.query.filter(Session.start_time >= month_start).count()
-        sessions_by_student = (
+        student_filter = request.args.get("student_id")
+        year_filter = request.args.get("year")
+        month_filter = request.args.get("month")
+
+        def parse_int(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        student_id = parse_int(student_filter)
+        year_value = parse_int(year_filter)
+        month_value = parse_int(month_filter)
+
+        if month_value and not year_value:
+            year_value = now.year
+
+        selected_year = year_value if year_value else now.year
+        selected_month = month_value if month_value else now.month
+
+        def month_range(year, month):
+            start = datetime(year, month, 1)
+            if month == 12:
+                end = datetime(year + 1, 1, 1)
+            else:
+                end = datetime(year, month + 1, 1)
+            return start, end
+
+        month_start, month_end = month_range(selected_year, selected_month)
+        year_start = datetime(selected_year, 1, 1)
+        year_end = datetime(selected_year + 1, 1, 1)
+
+        base_qs = Session.query
+        if student_id:
+            base_qs = base_qs.join(SessionStudent).filter(SessionStudent.student_id == student_id)
+
+        total_sessions = base_qs.filter(Session.start_time >= month_start, Session.start_time < month_end).count()
+        total_sessions_year = base_qs.filter(Session.start_time >= year_start, Session.start_time < year_end).count()
+
+        # Added: total active students
+        total_active_students = Student.query.filter_by(active=True).count()
+
+        filter_start = None
+        filter_end = None
+        if year_value:
+            if month_value:
+                filter_start, filter_end = month_range(year_value, month_value)
+            else:
+                filter_start = datetime(year_value, 1, 1)
+                filter_end = datetime(year_value + 1, 1, 1)
+            total_sessions = base_qs.filter(Session.start_time >= filter_start, Session.start_time < filter_end).count()
+
+        stats_start = filter_start or month_start
+        stats_end = filter_end or month_end
+
+        sessions_by_student_qs = (
             db.session.query(Student.full_name, func.count(SessionStudent.id))
             .join(SessionStudent)
             .join(Session)
-            .filter(Session.start_time >= month_start, SessionStudent.removed_from_session.is_(False))
-            .group_by(Student.full_name)
-            .all()
+            .filter(Session.start_time >= stats_start, Session.start_time < stats_end, SessionStudent.removed_from_session.is_(False))
         )
-        attendance_stats = (
+        if student_id:
+            sessions_by_student_qs = sessions_by_student_qs.filter(SessionStudent.student_id == student_id)
+        sessions_by_student = sessions_by_student_qs.group_by(Student.full_name).all()
+
+        attendance_stats_qs = (
             db.session.query(
                 Student.full_name,
                 func.sum(case((SessionStudent.attendance_status == "attended", 1), else_=0)),
@@ -67,22 +130,80 @@ def create_app():
             )
             .join(SessionStudent)
             .join(Session)
-            .filter(Session.start_time >= month_start, SessionStudent.removed_from_session.is_(False))
-            .group_by(Student.full_name)
+            .filter(Session.start_time >= stats_start, Session.start_time < stats_end, SessionStudent.removed_from_session.is_(False))
+        )
+        if student_id:
+            attendance_stats_qs = attendance_stats_qs.filter(SessionStudent.student_id == student_id)
+        attendance_stats = attendance_stats_qs.group_by(Student.full_name).all()
+
+        # Today's sessions (midnight to midnight UTC)
+        eager_students = joinedload(Session.students).joinedload(SessionStudent.student)
+        today_start = datetime(now.year, now.month, now.day)
+        tomorrow_start = today_start + timedelta(days=1)
+        todays_qs = base_qs.options(eager_students).filter(Session.start_time >= today_start, Session.start_time < tomorrow_start)
+        if filter_start:
+            todays_qs = todays_qs.filter(Session.start_time >= filter_start)
+        if filter_end:
+            todays_qs = todays_qs.filter(Session.start_time < filter_end)
+        todays_sessions = todays_qs.order_by(Session.start_time.asc()).all()
+
+        upcoming_qs = base_qs.options(eager_students).filter(Session.start_time >= tomorrow_start)
+        if filter_start:
+            upcoming_qs = upcoming_qs.filter(Session.start_time >= filter_start)
+        if filter_end:
+            upcoming_qs = upcoming_qs.filter(Session.start_time < filter_end)
+        upcoming_sessions = upcoming_qs.order_by(Session.start_time.asc()).limit(5).all()
+
+        # Student list for filter dropdown
+        students = Student.query.order_by(Student.full_name.asc()).all()
+
+        filtered_sessions = None
+        if student_id or year_value or month_value:
+            filtered_qs = base_qs
+            if filter_start:
+                filtered_qs = filtered_qs.filter(Session.start_time >= filter_start)
+            if filter_end:
+                filtered_qs = filtered_qs.filter(Session.start_time < filter_end)
+            filtered_sessions = filtered_qs.order_by(Session.start_time.asc()).all()
+
+        years_raw = (
+            db.session.query(func.strftime("%Y", Session.start_time))
+            .distinct()
+            .order_by(func.strftime("%Y", Session.start_time).desc())
             .all()
         )
-        upcoming_sessions = (
-            Session.query.filter(Session.start_time >= now)
-            .order_by(Session.start_time.asc())
-            .limit(5)
-            .all()
-        )
+        years = [int(y) for (y,) in years_raw if y]
+        if not years:
+            years = [now.year]
+
+        month_options = [
+            (1, "January"),
+            (2, "February"),
+            (3, "March"),
+            (4, "April"),
+            (5, "May"),
+            (6, "June"),
+            (7, "July"),
+            (8, "August"),
+            (9, "September"),
+            (10, "October"),
+            (11, "November"),
+            (12, "December"),
+        ]
+
         return render_template(
             "dashboard.html",
             total_sessions=total_sessions,
+            total_sessions_year=total_sessions_year,
+            total_active_students=total_active_students,
             sessions_by_student=sessions_by_student,
             attendance_stats=attendance_stats,
             upcoming_sessions=upcoming_sessions,
+            todays_sessions=todays_sessions,
+            students=students,
+            filtered_sessions=filtered_sessions,
+            years=years,
+            month_options=month_options,
         )
 
     @app.route("/students")
@@ -216,9 +337,83 @@ def create_app():
     @login_required
     def sessions_list():
         now = datetime.utcnow()
-        upcoming = Session.query.filter(Session.start_time >= now).order_by(Session.start_time.asc()).all()
-        past = Session.query.filter(Session.start_time < now).order_by(Session.start_time.desc()).all()
-        return render_template("sessions.html", upcoming=upcoming, past=past)
+        student_filter = request.args.get("student_id")
+        year_filter = request.args.get("year")
+        month_filter = request.args.get("month")
+        day_filter = request.args.get("day")
+
+        def parse_int(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        student_id = parse_int(student_filter)
+        year_value = parse_int(year_filter)
+        month_value = parse_int(month_filter)
+        day_value = parse_int(day_filter)
+
+        eager_students = joinedload(Session.students).joinedload(SessionStudent.student)
+        upcoming_qs = Session.query.options(eager_students).filter(Session.start_time >= now)
+        past_qs = Session.query.options(eager_students).filter(Session.start_time < now)
+        if student_id:
+            past_qs = (
+                past_qs.join(SessionStudent)
+                .filter(
+                    SessionStudent.student_id == student_id,
+                    SessionStudent.removed_from_session.is_(False),
+                )
+                .distinct()
+            )
+
+        past_start = now - timedelta(days=1)
+        if year_value:
+            if month_value and day_value:
+                past_start = datetime(year_value, month_value, day_value)
+            elif month_value:
+                past_start = datetime(year_value, month_value, 1)
+            else:
+                past_start = datetime(year_value, 1, 1)
+
+        past_qs = past_qs.filter(Session.start_time >= past_start)
+
+        upcoming = upcoming_qs.order_by(Session.start_time.asc()).all()
+        past = past_qs.order_by(Session.start_time.desc()).all()
+
+        students = Student.query.order_by(Student.full_name.asc()).all()
+        years_raw = (
+            db.session.query(func.strftime("%Y", Session.start_time))
+            .distinct()
+            .order_by(func.strftime("%Y", Session.start_time).desc())
+            .all()
+        )
+        years = [int(y) for (y,) in years_raw if y]
+        if not years:
+            years = [now.year]
+
+        month_options = [
+            (1, "January"),
+            (2, "February"),
+            (3, "March"),
+            (4, "April"),
+            (5, "May"),
+            (6, "June"),
+            (7, "July"),
+            (8, "August"),
+            (9, "September"),
+            (10, "October"),
+            (11, "November"),
+            (12, "December"),
+        ]
+
+        return render_template(
+            "sessions.html",
+            upcoming=upcoming,
+            past=past,
+            students=students,
+            years=years,
+            month_options=month_options,
+        )
 
     @app.route("/sessions/<int:session_id>", methods=["GET", "POST"])
     @login_required

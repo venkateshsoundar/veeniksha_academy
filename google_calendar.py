@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar.events",
-    "https://www.googleapis.com/auth/calendar"
 ]
 
 
@@ -23,16 +22,37 @@ def get_calendar_service(credentials_file: str, token_file: str):
         else:
             if not os.path.exists(credentials_file):
                 raise RuntimeError("Google credentials file not found.")
-            flow = InstalledAppFlow.from_client_secrets_file(credentials_file, SCOPES)
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(credentials_file, SCOPES)
+            except Exception as exc:
+                msg = str(exc)
+                if "invalid_scope" in msg or "Bad Request" in msg:
+                    raise RuntimeError(
+                        "Invalid OAuth scope requested. Ensure the Google Calendar API is enabled and "
+                        "that the OAuth client in Google Cloud Console supports the requested scopes. "
+                        "If running locally, consider creating a Desktop OAuth client or set "
+                        "GOOGLE_OAUTH_CONSOLE=1 to use the console flow."
+                    )
+                raise
             # Allow configuring OAuth behavior via environment:
             # - GOOGLE_OAUTH_PORT: set a fixed port (e.g., 8080) to register as a redirect URI for Web clients
             # - GOOGLE_OAUTH_CONSOLE: set to '1' or 'true' to use a console (copy/paste) flow instead of local server
             port = int(os.getenv("GOOGLE_OAUTH_PORT", "0"))
             use_console = os.getenv("GOOGLE_OAUTH_CONSOLE", "0").lower() in ("1", "true", "yes")
-            if use_console:
-                creds = flow.run_console()
-            else:
-                creds = flow.run_local_server(port=port)
+            try:
+                if use_console:
+                    creds = flow.run_console()
+                else:
+                    creds = flow.run_local_server(port=port)
+            except Exception as exc:
+                msg = str(exc)
+                if "invalid_scope" in msg or "Bad Request" in msg:
+                    raise RuntimeError(
+                        "Invalid OAuth scope requested during authorization. Ensure the OAuth client "
+                        "and consent screen allow the requested scopes, or try using the console flow "
+                        "(set GOOGLE_OAUTH_CONSOLE=1) and re-run after deleting the token file."
+                    )
+                raise
         with open(token_file, "w", encoding="utf-8") as token:
             token.write(creds.to_json())
     return build("calendar", "v3", credentials=creds)
