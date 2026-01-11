@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
-from app import create_app
 from models import Session, SessionStudent, Student, db
 
-def run_seed():
-    app = create_app()
+def run_seed(app):
     with app.app_context():
         db.create_all()
 
@@ -27,6 +25,7 @@ def run_seed():
             )
             db.session.add(session)
             db.session.flush()
+
             for student in Student.query.limit(2).all():
                 db.session.add(
                     SessionStudent(
@@ -39,6 +38,3 @@ def run_seed():
             db.session.commit()
 
         print("Seed data created.")
-
-if __name__ == "__main__":
-    run_seed()
