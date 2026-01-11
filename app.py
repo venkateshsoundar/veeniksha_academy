@@ -12,10 +12,6 @@ from google_calendar import create_calendar_event
 from models import Session, SessionStudent, Student, db
 
 
-if os.environ.get("RUN_SEED_ON_STARTUP") == "true":
-    from seed import run_seed
-    run_seed(app)
-
 
 load_dotenv()
 
@@ -453,6 +449,10 @@ def create_app():
 
 
 app = create_app()
+
+if os.environ.get("RUN_SEED_ON_STARTUP") == "true":
+    from seed import run_seed
+    run_seed(app)
 
 
 if __name__ == "__main__":
