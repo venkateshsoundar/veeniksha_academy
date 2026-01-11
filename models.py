@@ -57,3 +57,10 @@ class SessionStudent(db.Model):
     __table_args__ = (
         db.UniqueConstraint("session_id", "student_id", name="unique_session_student"),
     )
+
+
+class GoogleToken(db.Model):
+    __tablename__ = "google_tokens"
+    id = db.Column(db.Integer, primary_key=True)  # we will use id=1
+    token_json = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
