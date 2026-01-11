@@ -1,74 +1,34 @@
 from datetime import timedelta
-import os
+import json
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
-SCOPES = [
-    "https://www.googleapis.com/auth/calendar.events",
-]
+def _service_from_token_json(token_json: str):
+    info = json.loads(token_json)
+    creds = Credentials.from_authorized_user_info(info, SCOPES)
 
+    # refresh if needed
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
 
-def get_calendar_service(credentials_file: str, token_file: str):
-    creds = None
-    if os.path.exists(token_file):
-        creds = Credentials.from_authorized_user_file(token_file, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not os.path.exists(credentials_file):
-                raise RuntimeError("Google credentials file not found.")
-            try:
-                flow = InstalledAppFlow.from_client_secrets_file(credentials_file, SCOPES)
-            except Exception as exc:
-                msg = str(exc)
-                if "invalid_scope" in msg or "Bad Request" in msg:
-                    raise RuntimeError(
-                        "Invalid OAuth scope requested. Ensure the Google Calendar API is enabled and "
-                        "that the OAuth client in Google Cloud Console supports the requested scopes. "
-                        "If running locally, consider creating a Desktop OAuth client or set "
-                        "GOOGLE_OAUTH_CONSOLE=1 to use the console flow."
-                    )
-                raise
-            # Allow configuring OAuth behavior via environment:
-            # - GOOGLE_OAUTH_PORT: set a fixed port (e.g., 8080) to register as a redirect URI for Web clients
-            # - GOOGLE_OAUTH_CONSOLE: set to '1' or 'true' to use a console (copy/paste) flow instead of local server
-            port = int(os.getenv("GOOGLE_OAUTH_PORT", "0"))
-            use_console = os.getenv("GOOGLE_OAUTH_CONSOLE", "0").lower() in ("1", "true", "yes")
-            try:
-                if use_console:
-                    creds = flow.run_console()
-                else:
-                    creds = flow.run_local_server(port=port)
-            except Exception as exc:
-                msg = str(exc)
-                if "invalid_scope" in msg or "Bad Request" in msg:
-                    raise RuntimeError(
-                        "Invalid OAuth scope requested during authorization. Ensure the OAuth client "
-                        "and consent screen allow the requested scopes, or try using the console flow "
-                        "(set GOOGLE_OAUTH_CONSOLE=1) and re-run after deleting the token file."
-                    )
-                raise
-        with open(token_file, "w", encoding="utf-8") as token:
-            token.write(creds.to_json())
-    return build("calendar", "v3", credentials=creds)
+    service = build("calendar", "v3", credentials=creds)
+    return service, creds.to_json()  # return updated token_json after refresh
 
 
 def create_calendar_event(
+    token_json: str,
     summary: str,
     start_time,
     duration_mins: int,
     timezone: str,
     attendees,
-    credentials_file: str,
-    token_file: str,
     calendar_id: str,
 ):
-    service = get_calendar_service(credentials_file, token_file)
+    service, updated_token_json = _service_from_token_json(token_json)
     end_time = start_time + timedelta(minutes=duration_mins)
 
     event_body = {
@@ -76,11 +36,7 @@ def create_calendar_event(
         "start": {"dateTime": start_time.isoformat(), "timeZone": timezone},
         "end": {"dateTime": end_time.isoformat(), "timeZone": timezone},
         "attendees": [{"email": email} for email in attendees if email],
-        "conferenceData": {
-            "createRequest": {
-                "requestId": f"veeniksha-{start_time.timestamp()}"
-            }
-        },
+        "conferenceData": {"createRequest": {"requestId": f"veeniksha-{start_time.timestamp()}"}},
     }
 
     created_event = (
@@ -94,22 +50,17 @@ def create_calendar_event(
         .execute()
     )
 
-    # Extract Meet link robustly: prefer hangoutLink, then conferenceData entryPoints (video), then htmlLink/location
+    # Meet link extraction
     meet_link = created_event.get("hangoutLink")
     if not meet_link:
         conf = created_event.get("conferenceData") or {}
-        for ep in conf.get("entryPoints", []) if conf else []:
+        for ep in conf.get("entryPoints", []):
             uri = ep.get("uri")
-            ep_type = ep.get("entryPointType", "").lower()
+            ep_type = (ep.get("entryPointType") or "").lower()
             if uri and ("meet.google.com" in uri or ep_type == "video"):
                 meet_link = uri
                 break
     if not meet_link:
         meet_link = created_event.get("htmlLink") or created_event.get("location")
 
-    if not meet_link:
-        # Helpful debug output when no Meet link was returned
-        print("Google Calendar event created without Meet link; event body:", created_event)
-
-    event_id = created_event.get("id")
-    return meet_link, event_id
+    return meet_link, created_event.get("id"), updated_token_json
