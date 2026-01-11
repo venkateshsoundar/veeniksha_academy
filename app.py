@@ -34,27 +34,31 @@ def create_app():
     db.init_app(app)
     @app.route("/google/connect")
     def google_connect():
-        # Uses Web OAuth client via env vars (Render)
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                    "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                }
-            },
-            scopes=["https://www.googleapis.com/auth/calendar.events"],
-            redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
-        )
-    
-        auth_url, state = flow.authorization_url(
-            access_type="offline",
-            include_granted_scopes="true",
-            prompt="consent",
-        )
-        session["oauth_state"] = state
-        return redirect(auth_url)
+    # Remember where user should return after Google auth
+    next_url = request.args.get("next") or url_for("dashboard")
+    session["post_auth_redirect"] = next_url
+
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": os.environ["GOOGLE_CLIENT_ID"],
+                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        },
+        scopes=["https://www.googleapis.com/auth/calendar"],
+        redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
+    )
+
+    auth_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",
+    )
+    session["oauth_state"] = state
+    return redirect(auth_url)
+
 
 
     @app.route("/oauth2callback")
@@ -354,7 +358,8 @@ def create_app():
                 try:
                     token_row = GoogleToken.query.get(1)
                     if not token_row:
-                        flash("Google Calendar is not connected. Please connect first: /google/connect", "warning")
+                        flash("One-time Google authorization needed to create Meet links. Please allow access.", "info")
+                        return redirect(url_for("google_connect", next=url_for("schedule_session")))
                     else:
                         meet_link, calendar_event_id, new_token_json = create_calendar_event(
                             token_json=token_row.token_json,
