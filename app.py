@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from sqlalchemy import case, func
 from sqlalchemy.orm import joinedload
 import time
@@ -10,7 +10,8 @@ import os as _os
 
 from google_calendar import create_calendar_event
 from models import Session, SessionStudent, Student, db
-
+from google_auth_oauthlib.flow import Flow
+from models import GoogleToken
 
 
 load_dotenv()
@@ -31,6 +32,61 @@ def create_app():
     app.config["DEFAULT_MEET_LINK"] = os.getenv("DEFAULT_MEET_LINK", "")
 
     db.init_app(app)
+    @app.route("/google/connect")
+def google_connect():
+    # Uses Web OAuth client via env vars (Render)
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": os.environ["GOOGLE_CLIENT_ID"],
+                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        },
+        scopes=["https://www.googleapis.com/auth/calendar.events"],
+        redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
+    )
+
+    auth_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",
+    )
+    session["oauth_state"] = state
+    return redirect(auth_url)
+
+
+    @app.route("/oauth2callback")
+    def oauth2callback():
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.environ["GOOGLE_CLIENT_ID"],
+                    "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                }
+            },
+            scopes=["https://www.googleapis.com/auth/calendar.events"],
+            state=session.get("oauth_state"),
+            redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
+        )
+    
+        flow.fetch_token(authorization_response=request.url)
+        creds = flow.credentials
+        token_json = creds.to_json()
+    
+        row = GoogleToken.query.get(1)
+        if row:
+            row.token_json = token_json
+        else:
+            db.session.add(GoogleToken(id=1, token_json=token_json))
+        db.session.commit()
+    
+        flash("Google Calendar connected! Meet links will be generated automatically.", "success")
+        return redirect(url_for("dashboard"))
+
 
     @app.context_processor
     def inject_static_version():
