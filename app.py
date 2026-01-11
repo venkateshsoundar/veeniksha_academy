@@ -73,7 +73,12 @@ def create_app():
             redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
         )
     
-        flow.fetch_token(authorization_response=request.url)
+        flow.oauth2session.scope = None
+        flow.fetch_token(
+            authorization_response=request.url,
+            include_client_id=True,
+        )
+
         creds = flow.credentials
         token_json = creds.to_json()
     
