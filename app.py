@@ -94,7 +94,7 @@ def create_app():
         db.session.commit()
     
         flash("Google Calendar connected! Meet links will be generated automatically.", "success")
-        return redirect(url_for("dashboard"))
+        return redirect(session.pop("post_auth_redirect", url_for("dashboard")))
 
 
     @app.context_processor
