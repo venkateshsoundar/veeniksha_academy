@@ -35,29 +35,29 @@ def create_app():
     @app.route("/google/connect")
     def google_connect():
     # Remember where user should return after Google auth
-    next_url = request.args.get("next") or url_for("dashboard")
-    session["post_auth_redirect"] = next_url
-
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": os.environ["GOOGLE_CLIENT_ID"],
-                "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-            }
-        },
-        scopes=["https://www.googleapis.com/auth/calendar"],
-        redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
-    )
-
-    auth_url, state = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",
-    )
-    session["oauth_state"] = state
-    return redirect(auth_url)
+        next_url = request.args.get("next") or url_for("dashboard")
+        session["post_auth_redirect"] = next_url
+    
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.environ["GOOGLE_CLIENT_ID"],
+                    "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                }
+            },
+            scopes=["https://www.googleapis.com/auth/calendar"],
+            redirect_uri=os.environ["GOOGLE_REDIRECT_URI"],
+        )
+    
+        auth_url, state = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent",
+        )
+        session["oauth_state"] = state
+        return redirect(auth_url)
 
 
 
