@@ -1,0 +1,1 @@
+Website image assets. The hero and Guru portrait should use the user-approved Monisha-with-Veena photograph.
