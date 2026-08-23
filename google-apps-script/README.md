@@ -1,0 +1,1 @@
+The custom registration form on GitHub Pages is intended to submit to the Google Apps Script backend in this folder. The Apps Script stores each submission in a Google Spreadsheet and sends a confirmation email to the registrant plus a notification email to the script owner. See SETUP.md for the one-time deployment steps.
