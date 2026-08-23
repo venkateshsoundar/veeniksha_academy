@@ -1,0 +1,1 @@
+Frontend custom registration form and Apps Script backend are maintained on the gh-pages branch. The only Google-account action that cannot be performed through GitHub is the one-time deployment/authorization of the Apps Script web app; see google-apps-script/SETUP.md.
