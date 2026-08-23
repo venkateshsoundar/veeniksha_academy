@@ -1,0 +1,1 @@
+Requested replacement image supplied by user on 2026-08-23. The website HTML/CSS should reference the final uploaded asset in assets/monisha-veena-new.jpg once committed.
