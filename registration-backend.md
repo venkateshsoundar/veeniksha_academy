@@ -1,0 +1,1 @@
+The website registration UI is designed to submit to the Google Apps Script backend in `google-apps-script/Code.gs`. Complete the one-time Google deployment steps in `google-apps-script/SETUP.md`, then paste the resulting `/exec` URL into `script.js`.
