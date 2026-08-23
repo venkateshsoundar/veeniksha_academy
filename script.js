@@ -3,13 +3,15 @@ const navLinks=document.querySelector('.nav-links');
 menuButton?.addEventListener('click',()=>{const open=navLinks.classList.toggle('open');menuButton.setAttribute('aria-expanded',String(open));});
 document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>{navLinks.classList.remove('open');menuButton?.setAttribute('aria-expanded','false');}));
 
-// Force the approved Monisha + Veena image to load from the known JPG asset.
-// This bypasses the broken/blank WebP asset and adds a cache-buster for GitHub Pages.
-const approvedImage='assets/monisha-veena.jpg?v=20260823-2002';
+// Use the clean, high-resolution image supplied by the user.
+const approvedImage='assets/monisha-clean.jpg?v=20260823-2013';
 document.querySelectorAll('.image-frame img,.guru-photo img').forEach(img=>{
   img.src=approvedImage;
+  img.removeAttribute('srcset');
   img.style.display='block';
   img.style.opacity='1';
+  img.style.filter='none';
+  img.style.imageRendering='auto';
   img.addEventListener('error',()=>{
     const holder=img.parentElement;
     img.style.display='none';
