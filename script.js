@@ -4,51 +4,102 @@ const menu=$('.menu-toggle'), nav=$('.nav-links');
 menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
 $$('.nav-links a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
 
-const reveals=$$('.reveal');
+// Scroll progress indicator.
+const progress=document.createElement('div');
+progress.className='scroll-progress';
+document.body.appendChild(progress);
+window.addEventListener('scroll',()=>{
+  const max=document.documentElement.scrollHeight-innerHeight;
+  progress.style.transform=`scaleX(${max>0?scrollY/max:0})`;
+  document.body.classList.toggle('scrolled',scrollY>18);
+},{passive:true});
+
+// Reveal animations with automatic stagger per section.
+const revealCandidates=[...$$('.reveal'),...$$('.program-grid article'),...$$('.metrics-grid > div'),...$$('.why-grid > span'),...$$('.guru-points > span'),...$$('.gallery-placeholder'),...$$('.feature-strip-grid > div'),...$$('.registration-form .form-grid > *')];
+revealCandidates.forEach((el,i)=>{
+  el.classList.add('motion-item');
+  const parent=el.closest('section')||el.parentElement;
+  const siblings=parent?[...parent.querySelectorAll('.motion-item')]:[];
+  const idx=Math.max(0,siblings.indexOf(el));
+  el.style.setProperty('--delay',`${Math.min(idx*55,440)}ms`);
+});
 if('IntersectionObserver' in window){
   const io=new IntersectionObserver(entries=>entries.forEach(entry=>{
     if(entry.isIntersecting){entry.target.classList.add('visible');io.unobserve(entry.target);}
-  }),{threshold:.12});
-  reveals.forEach(el=>io.observe(el));
-}else{reveals.forEach(el=>el.classList.add('visible'));}
+  }),{threshold:.12,rootMargin:'0px 0px -6%'});
+  revealCandidates.forEach(el=>io.observe(el));
+}else{revealCandidates.forEach(el=>el.classList.add('visible'));}
 
-// Student feedback: horizontal mouse-wheel, trackpad, drag and touch scrolling.
+// Hero motion: subtle parallax and cursor/touch tilt.
+const hero=$('.hero'), heroCard=$('.hero-placeholder'), heroVeena=$('.placeholder-veena');
+if(hero && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+  window.addEventListener('scroll',()=>{
+    const y=Math.min(scrollY*.10,46);
+    hero.style.setProperty('--parallax-y',`${y}px`);
+  },{passive:true});
+  hero.addEventListener('pointermove',e=>{
+    if(innerWidth<900||!heroCard)return;
+    const r=hero.getBoundingClientRect(), x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+    heroCard.style.setProperty('--rx',`${(-y*3.5).toFixed(2)}deg`);
+    heroCard.style.setProperty('--ry',`${(x*4.5).toFixed(2)}deg`);
+    heroVeena?.style.setProperty('--vx',`${(x*8).toFixed(1)}px`);
+    heroVeena?.style.setProperty('--vy',`${(y*6).toFixed(1)}px`);
+  });
+  hero.addEventListener('pointerleave',()=>{heroCard?.style.setProperty('--rx','0deg');heroCard?.style.setProperty('--ry','0deg');heroVeena?.style.setProperty('--vx','0px');heroVeena?.style.setProperty('--vy','0px');});
+}
+
+// Animated metric values when they enter view.
+$$('.metrics-grid b').forEach(el=>{
+  const raw=el.textContent.trim();
+  const match=raw.match(/^(\d+)(\+)?$/);
+  if(!match)return;
+  const target=Number(match[1]),suffix=match[2]||'';
+  el.textContent='0'+suffix;
+  const counterIo=new IntersectionObserver(entries=>entries.forEach(entry=>{
+    if(!entry.isIntersecting)return;
+    const start=performance.now(),dur=900;
+    const tick=t=>{const p=Math.min(1,(t-start)/dur);const eased=1-Math.pow(1-p,3);el.textContent=Math.round(target*eased)+suffix;if(p<1)requestAnimationFrame(tick)};
+    requestAnimationFrame(tick);counterIo.disconnect();
+  }),{threshold:.6});
+  counterIo.observe(el);
+});
+
+// Testimonials: natural swipe/scroll plus gentle auto-advance until user interacts.
 const storySlider=$('#storySlider');
 storySlider?.addEventListener('wheel',e=>{
-  if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){
-    e.preventDefault();
-    storySlider.scrollBy({left:e.deltaY,behavior:'smooth'});
-  }
+  if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.preventDefault();storySlider.scrollBy({left:e.deltaY,behavior:'smooth'});}
 },{passive:false});
-let isDown=false,startX=0,startScroll=0;
-storySlider?.addEventListener('pointerdown',e=>{isDown=true;startX=e.clientX;startScroll=storySlider.scrollLeft;storySlider.setPointerCapture?.(e.pointerId);});
+let isDown=false,startX=0,startScroll=0,storyTouched=false;
+storySlider?.addEventListener('pointerdown',e=>{storyTouched=true;isDown=true;startX=e.clientX;startScroll=storySlider.scrollLeft;storySlider.setPointerCapture?.(e.pointerId);});
 storySlider?.addEventListener('pointermove',e=>{if(isDown)storySlider.scrollLeft=startScroll-(e.clientX-startX);});
 ['pointerup','pointercancel','pointerleave'].forEach(evt=>storySlider?.addEventListener(evt,()=>{isDown=false;}));
+setInterval(()=>{
+  if(!storySlider||storyTouched||document.hidden)return;
+  const first=$('.story-track blockquote',storySlider); if(!first)return;
+  const step=first.offsetWidth+14;
+  const nearEnd=storySlider.scrollLeft+storySlider.clientWidth>=storySlider.scrollWidth-step/2;
+  storySlider.scrollTo({left:nearEnd?0:storySlider.scrollLeft+step,behavior:'smooth'});
+},4200);
+
+// Lightweight magnetic movement for primary calls-to-action on desktop.
+$$('.btn-primary,.enquire-btn').forEach(btn=>{
+  btn.addEventListener('pointermove',e=>{
+    if(innerWidth<900)return;
+    const r=btn.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2);
+    btn.style.transform=`translate(${x*.06}px,${y*.08}px) translateY(-2px)`;
+  });
+  btn.addEventListener('pointerleave',()=>btn.style.transform='');
+});
 
 const form=$('#registrationForm'), status=$('#formStatus');
 const APPS_SCRIPT_URL='YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
 form?.addEventListener('submit',async e=>{
-  e.preventDefault();
-  status.className='form-status';
-  if(form.website.value)return;
-  if(!form.checkValidity()){
-    form.reportValidity();
-    status.textContent='Please complete the required fields.';
-    status.classList.add('error');
-    return;
-  }
-  const btn=$('.submit-btn',form),old=btn.innerHTML;
-  btn.disabled=true; btn.textContent='Sending registration…';
-  const payload=Object.fromEntries(new FormData(form).entries());
-  payload.source='veeniksha-website'; payload.submittedAt=new Date().toISOString();
-  if(APPS_SCRIPT_URL.startsWith('YOUR_')){
-    status.textContent='Registration UI is ready; Google Apps Script must be connected before live submission.';
-    status.classList.add('error'); btn.disabled=false; btn.innerHTML=old; return;
-  }
-  try{
-    await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    form.reset(); status.textContent='Thank you — your registration has been received.'; status.classList.add('success');
-  }catch(err){
-    status.textContent='We could not submit right now. Please try again or contact Veeniksha on WhatsApp.'; status.classList.add('error');
-  }finally{btn.disabled=false;btn.innerHTML=old;}
+  e.preventDefault(); status.className='form-status'; if(form.website.value)return;
+  if(!form.checkValidity()){form.reportValidity();status.textContent='Please complete the required fields.';status.classList.add('error');return;}
+  const btn=$('.submit-btn',form),old=btn.innerHTML; btn.disabled=true;btn.textContent='Sending registration…';
+  const payload=Object.fromEntries(new FormData(form).entries()); payload.source='veeniksha-website';payload.submittedAt=new Date().toISOString();
+  if(APPS_SCRIPT_URL.startsWith('YOUR_')){status.textContent='Registration UI is ready; Google Apps Script must be connected before live submission.';status.classList.add('error');btn.disabled=false;btn.innerHTML=old;return;}
+  try{await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});form.reset();status.textContent='Thank you — your registration has been received.';status.classList.add('success');}
+  catch(err){status.textContent='We could not submit right now. Please try again or contact Veeniksha on WhatsApp.';status.classList.add('error');}
+  finally{btn.disabled=false;btn.innerHTML=old;}
 });
