@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+.choice-group{grid-column:1/-1;display:block;margin:0}.choice-title{margin:0 0 7px;font-size:11px;font-weight:800;line-height:1.4;color:#4d5869}.choice-options{display:flex;flex-wrap:wrap;gap:8px}.choice-options label{display:inline-flex!important;align-items:center;gap:8px;margin:0!important;padding:10px 14px;border:1px solid #ddcfb8;border-radius:10px;background:#fffdf8;font-size:11px!important;font-weight:500!important;line-height:1.2;color:#172032;cursor:pointer;min-width:88px}.choice-options input[type=radio]{width:17px!important;height:17px!important;margin:0!important;padding:0!important;accent-color:#b7791f;flex:0 0 17px}.choice-options label:has(input:checked){border-color:#b7791f;background:#fff7e8;box-shadow:0 0 0 2px rgba(183,121,31,.10)}
+@media(max-width:900px){.choice-group{grid-column:auto}.choice-title,.choice-options label{font-size:11px!important}}
+</style>
 </head>
 <body>
 <header class="site-header" id="top"><nav class="nav container">
@@ -30,11 +34,11 @@
 <label class="full"><span>Parent/Guardian Name (for students under 18)</span><input name="parentGuardianName"></label>
 <label class="full"><span>Phone / WhatsApp Number (with country prefix) *</span><input name="phone" type="tel" required placeholder="+1 000 000 0000"></label>
 <label class="full"><span>City, State, Country *</span><input name="cityStateCountry" required></label>
-<fieldset class="full choice-group"><legend>Have you learned Carnatic music before? *</legend><label><input type="radio" name="learnedCarnatic" value="Yes" required> Yes</label><label><input type="radio" name="learnedCarnatic" value="No"> No</label></fieldset>
-<fieldset class="full choice-group"><legend>Have you learned Veena before? *</legend><label><input type="radio" name="learnedVeena" value="Yes" required> Yes</label><label><input type="radio" name="learnedVeena" value="No"> No</label></fieldset>
+<div class="full choice-group"><p class="choice-title">Have you learned Carnatic music before? *</p><div class="choice-options"><label><input type="radio" name="learnedCarnatic" value="Yes" required>Yes</label><label><input type="radio" name="learnedCarnatic" value="No">No</label></div></div>
+<div class="full choice-group"><p class="choice-title">Have you learned Veena before? *</p><div class="choice-options"><label><input type="radio" name="learnedVeena" value="Yes" required>Yes</label><label><input type="radio" name="learnedVeena" value="No">No</label></div></div>
 <label class="full"><span>If yes, how long have you been learning Veena? *</span><input name="veenaLearningDuration" required></label>
-<fieldset class="full choice-group"><legend>Do you currently own a Veena? *</legend><label><input type="radio" name="ownVeena" value="Yes" required> Yes</label><label><input type="radio" name="ownVeena" value="No"> No</label></fieldset>
-<fieldset class="full choice-group"><legend>How did you hear about our Veena classes? *</legend><label><input type="radio" name="heardAbout" value="Friend/Family/Existing student" required> Friend/Family/Existing student</label><label><input type="radio" name="heardAbout" value="Instagram"> Instagram</label><label><input type="radio" name="heardAbout" value="Facebook"> Facebook</label><label><input type="radio" name="heardAbout" value="YouTube"> YouTube</label><label><input type="radio" name="heardAbout" value="Google"> Google</label><label><input type="radio" name="heardAbout" value="Other"> Other</label></fieldset>
+<div class="full choice-group"><p class="choice-title">Do you currently own a Veena? *</p><div class="choice-options"><label><input type="radio" name="ownVeena" value="Yes" required>Yes</label><label><input type="radio" name="ownVeena" value="No">No</label></div></div>
+<div class="full choice-group"><p class="choice-title">How did you hear about our Veena classes? *</p><div class="choice-options"><label><input type="radio" name="heardAbout" value="Friend/Family/Existing student" required>Friend/Family/Existing student</label><label><input type="radio" name="heardAbout" value="Instagram">Instagram</label><label><input type="radio" name="heardAbout" value="Facebook">Facebook</label><label><input type="radio" name="heardAbout" value="YouTube">YouTube</label><label><input type="radio" name="heardAbout" value="Google">Google</label><label><input type="radio" name="heardAbout" value="Other">Other</label></div></div>
 <label class="full"><span>Were you referred by an existing student? If yes, please provide their name. *</span><input name="referralName" required></label>
 <label class="full"><span>Aspiration in Veena *</span><textarea name="aspiration" rows="4" required></textarea></label>
 <label class="full"><span>Five songs you love to play in future *</span><textarea name="futureSongs" rows="4" required></textarea></label>
